@@ -10,9 +10,11 @@ A estrutura de arquivos foi organizada seguindo as melhores práticas de modular
 
 ```
 SmartPark/
-├── index.html            # 💻 Painel Web (página inicial / Dashboard, Financeiro, Relatórios)
-├── script.js             # 💻 Lógica de consumo de API Flask, renderização e Chart.js
-├── style.css             # 💻 Identidade visual, Dark Theme, variáveis CSS e animações
+├── frontend/             # 💻 Todo o ecossistema do front-end
+│   ├── index.html        # Painel Web administrativo (Dashboard, Financeiro, Relatórios)
+│   ├── script.js         # Lógica de consumo de API Flask, renderização dinâmica e Chart.js
+│   └── style.css         # Identidade visual premium, variáveis HSL, Dark Theme e animações
+│
 ├── Detecção.py           # 🧠 Thread de monitoramento OpenCV + YOLOv8 & Thread de API Flask
 ├── banco.py              # 🗄️ Camada de persistência, conexão SQLite e queries analíticas
 ├── .gitignore            # Bloqueia caches python, pesos da rede neural (.pt) e bancos locais (.db)
@@ -77,7 +79,8 @@ Antes de iniciar a detecção, você precisa desenhar os limites das vagas da su
 3. O modelo YOLOv8m será carregado e a API REST subirá automaticamente na URL: `http://localhost:5000`.
 
 #### **Passo C: Abrir a Interface Web**
-1. Dê um duplo clique no arquivo `index.html` (localizado diretamente na raiz do projeto) para abri-lo no seu navegador.
+1. Vá até a pasta `frontend/`.
+2. Dê um duplo clique no arquivo `index.html` para abri-lo no seu navegador.
 3. Navegue entre as abas:
    * **Dashboard:** Acompanhe a grade física em tempo real, as estatísticas de vagas livres/ocupadas e o gráfico de pico diário.
    * **Financeiro:** Visualize o caixa dinâmico diário/semanal/mensal e acompanhe a cobrança em tempo real de cada carro que estiver na vaga.
