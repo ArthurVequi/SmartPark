@@ -2,6 +2,8 @@ from ultralytics import YOLO
 import cv2
 import time
 import threading
+import sqlite3
+import datetime
 from flask import Flask, jsonify
 from flask_cors import CORS
 import banco
@@ -33,6 +35,48 @@ def get_resumo():
         ocupadas = sum(1 for v in estado_vagas if v['situacao'] == 'ocupada')
         livres   = total - ocupadas
         return jsonify({ 'total': total, 'livres': livres, 'ocupadas': ocupadas })
+
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    return jsonify(banco.obter_logs())
+
+@app.route('/api/financeiro', methods=['GET'])
+def get_financeiro():
+    resumo = banco.obter_resumo_financeiro()
+    sessoes_ativas = banco.obter_sessoes_ativas()
+    
+    ativos_respostas = []
+    agora_ts = int(time.time())
+    
+    for sessao in sessoes_ativas:
+        vid = sessao['vaga_id']
+        entrada_ts = sessao['entrada']
+        
+        duracao = agora_ts - entrada_ts
+        minutos = duracao // 60
+        if minutos < 60:
+            duracao_str = f"{minutos}min"
+        else:
+            horas = minutos // 60
+            mins = minutos % 60
+            duracao_str = f"{horas}h {mins}m"
+            
+        # Tarifa de R$ 10.00/hora, mínimo de R$ 2.00
+        valor_atual = round(max(2.00, (duracao / 3600.0) * 10.0), 2)
+        
+        entrada_formatada = datetime.datetime.fromtimestamp(entrada_ts).strftime('%H:%M:%S')
+        
+        ativos_respostas.append({
+            'vaga_id': f"{vid:02d}",
+            'entrada': entrada_formatada,
+            'duracao': duracao_str,
+            'valor_a_pagar': valor_atual
+        })
+        
+    return jsonify({
+        'resumo': resumo,
+        'ativos': ativos_respostas
+    })
 
 def iniciar_api():
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
@@ -156,6 +200,43 @@ else:
                 cv2.putText(frame, str(vid), (vx1, vy1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, cor, 1)
 
             with lock:
+                # Compara mudanças de estado para gravar logs de entrada/saída no banco
+                dict_antigo = {v['id']: v['situacao'] for v in estado_vagas}
+                
+                for v in novo_estado:
+                    vid = v['id']
+                    situacao_nova = v['situacao']
+                    situacao_antiga = dict_antigo.get(vid, 'livre')
+                    
+                    if situacao_antiga == 'livre' and situacao_nova == 'ocupada':
+                        print(f"🚗 DETECTADO: Entrada na Vaga {vid}")
+                        banco.registrar_entrada(vid, int(time.time()))
+                    elif situacao_antiga == 'ocupada' and situacao_nova == 'livre':
+                        print(f"🚙 DETECTADO: Saída da Vaga {vid}")
+                        
+                        # Consulta o banco para saber o horário de entrada ativo
+                        conn = sqlite3.connect('estacionamento.db', timeout=10.0)
+                        cursor = conn.cursor()
+                        cursor.execute('SELECT entrada FROM registro_vagas WHERE vaga_id = ? AND saida IS NULL ORDER BY entrada DESC LIMIT 1', (vid,))
+                        row = cursor.fetchone()
+                        conn.close()
+                        
+                        saida_ts = int(time.time())
+                        valor_pago = 0.0
+                        if row:
+                            entrada_ts = row[0]
+                            duracao = saida_ts - entrada_ts
+                            # R$ 10.00 por hora, mínimo de R$ 2.00
+                            valor_pago = round(max(2.00, (duracao / 3600.0) * 10.0), 2)
+                        else:
+                            # Caso não tenha registro de entrada, cria uma retroativa fictícia (5 min atrás)
+                            entrada_ts = saida_ts - 300
+                            banco.registrar_entrada(vid, entrada_ts)
+                            duracao = 300
+                            valor_pago = 2.00
+                            
+                        banco.registrar_saida(vid, saida_ts, valor_pago)
+                
                 estado_vagas = novo_estado
 
             livres = len(vagas) - ocupadas

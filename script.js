@@ -258,22 +258,87 @@ function inicializarGraficosRelatorio() {
     options: { responsive: false, cutout: '68%', plugins: { legend: { display: false } } }
   });
 
-  const tbody = document.getElementById('logs-tbody');
-  tbody.innerHTML = '';
-  [
-    { dataHora: '25/05 14:15', placa: 'ABC-1234', numeroVaga: '04', acao: 'Entrada', duracao: '-' },
-    { dataHora: '25/05 13:45', placa: 'XYZ-7890', numeroVaga: '12', acao: 'Saída',   duracao: '1h 30m' },
-    { dataHora: '25/05 13:45', placa: 'XYZ-7890', numeroVaga: '18', acao: 'Saída',   duracao: '1h 30m' },
-    { dataHora: '25/05 14:15', placa: 'ABC-1234', numeroVaga: '04', acao: 'Entrada', duracao: '-' },
-    { dataHora: '25/05 12:15', placa: 'ABC-1234', numeroVaga: '18', acao: 'Saída',   duracao: '1h 30m' },
-  ].forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="mono" style="color:var(--muted)">${r.dataHora}</td><td class="mono">${r.placa}</td><td class="mono">${r.numeroVaga}</td><td><span class="${r.acao==='Entrada'?'badge-entrada':'badge-saida'}">${r.acao}</span></td><td class="mono" style="color:var(--muted)">${r.duracao}</td>`;
-    tbody.appendChild(tr);
-  });
-
   const agora = new Date();
   document.getElementById('r-gen-ts').textContent = 'Gerado em: ' + agora.toLocaleDateString('pt-BR') + ' · ' + agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+
+async function buscarLogsAPI() {
+  try {
+    const resposta = await fetch(`${API_URL}/api/logs`, { signal: AbortSignal.timeout(3000) });
+    if (!resposta.ok) throw new Error('Resposta inválida');
+    const dados = await resposta.json();
+    const tbody = document.getElementById('logs-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (dados.length === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="4" style="text-align:center; color:var(--muted); padding: 15px;">Nenhum evento registrado ainda.</td>`;
+      tbody.appendChild(tr);
+    } else {
+      dados.forEach(r => {
+        const tr = document.createElement('tr');
+        const badgeClass = r.acao === 'Entrada' ? 'badge-entrada' : 'badge-saida';
+        tr.innerHTML = `
+          <td class="mono" style="color:var(--muted)">${r.data_hora}</td>
+          <td class="mono">VAGA ${r.vaga_id}</td>
+          <td><span class="${badgeClass}">${r.acao.toUpperCase()}</span></td>
+          <td class="mono" style="color:var(--muted)">${r.duracao}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  } catch (erro) {
+    console.warn('Erro ao carregar logs:', erro.message);
+  }
+}
+
+async function buscarFinanceiroAPI() {
+  try {
+    const resposta = await fetch(`${API_URL}/api/financeiro`, { signal: AbortSignal.timeout(3000) });
+    if (!resposta.ok) throw new Error('Resposta inválida');
+    const dados = await resposta.json();
+    
+    // Atualiza faturamentos nas tags HTML do menu financeiro
+    document.getElementById('fin-diario').textContent = formatarMoeda(dados.resumo.diario);
+    document.getElementById('fin-semanal').textContent = formatarMoeda(dados.resumo.semanal);
+    document.getElementById('fin-mensal').textContent = formatarMoeda(dados.resumo.mensal);
+    
+    // Atualiza tabela de veículos ativos
+    const tbody = document.getElementById('financeiro-tbody');
+    if (tbody) {
+      tbody.innerHTML = '';
+      let totalPotencial = 0;
+      
+      if (dados.ativos.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="5" style="text-align:center; color:var(--muted); padding: 20px;">Nenhum veículo estacionado no momento.</td>`;
+        tbody.appendChild(tr);
+      } else {
+        dados.ativos.forEach(a => {
+          totalPotencial += a.valor_a_pagar;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="mono">VAGA ${a.vaga_id}</td>
+            <td class="mono" style="color:var(--muted)">${a.entrada}</td>
+            <td class="mono" style="color:var(--muted)">${a.duracao}</td>
+            <td class="mono" style="color:var(--green); font-weight:700;">${formatarMoeda(a.valor_a_pagar)}</td>
+            <td><span class="spot-badge occ">PARKED</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      // Atualiza o total potencial na barra lateral
+      document.getElementById('fin-potencial').textContent = formatarMoeda(totalPotencial);
+    }
+  } catch (erro) {
+    console.warn('Erro ao carregar dados financeiros:', erro.message);
+  }
+}
+
+function formatarMoeda(valor) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
 }
 
 /* INICIALIZAÇÃO */
@@ -282,6 +347,12 @@ setInterval(atualizarRelogio, 1000);
 
 window.addEventListener('load', async () => {
   await buscarVagasAPI();
+  await buscarLogsAPI();
+  await buscarFinanceiroAPI();
   inicializarGraficosDashboard();
-  setInterval(buscarVagasAPI, 2000);
+  setInterval(async () => {
+    await buscarVagasAPI();
+    await buscarLogsAPI();
+    await buscarFinanceiroAPI();
+  }, 2000);
 });
