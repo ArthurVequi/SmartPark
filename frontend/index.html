@@ -134,7 +134,7 @@
         <div class="stat-card">
           <div class="stat-icon amber" style="font-size:20px;">🚗</div>
           <div>
-            <div class="stat-num" style="color:var(--amber)">75%</div>
+            <div class="stat-num" id="rep-media-ocupacao" style="color:var(--amber)">--%</div>
             <div class="stat-lbl">Média Ocupação Diária</div>
             <div class="stat-pct">Média · Últimos 30 Dias</div>
           </div>
@@ -142,7 +142,7 @@
         <div class="stat-card">
           <div class="stat-icon red" style="font-size:20px;">🚗</div>
           <div>
-            <div class="stat-num red">2h 15m</div>
+            <div class="stat-num red" id="rep-media-permanencia">--min</div>
             <div class="stat-lbl">Média Permanência</div>
             <div class="stat-pct">Permanência Média (Horas)</div>
           </div>
@@ -150,9 +150,9 @@
         <div class="stat-card">
           <div class="stat-icon amber">🅿</div>
           <div>
-            <div class="stat-num" style="color:var(--amber)">Sáb, 18/05</div>
+            <div class="stat-num" id="rep-maior-movimento" style="color:var(--amber)">--</div>
             <div class="stat-lbl">Dia de Maior Movimento</div>
-            <div class="stat-pct" id="r-gen-date">18/05/2024</div>
+            <div class="stat-pct" id="r-gen-date">--</div>
           </div>
         </div>
         <div class="stat-card">
@@ -266,7 +266,7 @@
               <div style="position:relative;width:120px;height:120px;flex-shrink:0;">
                 <canvas id="r-chart-tipo" width="120" height="120" role="img" aria-label="Distribuição por tipo de veículo">Distribuição tipo.</canvas>
                 <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
-                  <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);">21</div>
+                  <div id="r-tipo-total" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);">0</div>
                   <div style="font-size:9px;color:var(--muted);">Total</div>
                 </div>
               </div>
