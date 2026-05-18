@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Databases (Local SQLite storage)
+*.db
+*.sqlite
+
+# Big Machine Learning models (YOLO weights)
+*.pt
+*.pth
+*.onnx
+
+# IDE / Editor configuration folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
