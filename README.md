@@ -33,7 +33,7 @@ O SmartPark é sustentado por duas camadas principais de processamento concorren
    * **API RESTful (Flask):** Disponibiliza os dados de vagas, logs de auditoria, faturamento consolidado e dashboards analíticos através de endpoints na porta `5000`.
    * **Módulo Banco (`banco.py`):** Gerencia conexões SQLite e centraliza todas as queries de controle de vagas e inteligência de negócios.
 
-2. **Front-end Analítico (HTML5 / Vanilla CSS / JavaScript):**
+2. **Front-end Analítico (HTML5 / CSS / JavaScript):**
    * O painel web atualiza-se a cada `2 segundos` de forma assíncrona, apresentando o mapa visual das vagas, dados financeiros acumulados em tempo real e gráficos detalhados.
 
 ---
